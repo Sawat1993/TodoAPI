@@ -20,4 +20,12 @@ app.post('/todos',(req, res) => {
 
 });
 
+app.get('/todos',(req,res) => {
+    Todo.find().then((docs) => {
+        res.send({docs});//creation object around it to add few more properties later
+    },(e) => {res.send(e);})
+});
+
 app.listen(3000);
+
+module.exports.app = app;
