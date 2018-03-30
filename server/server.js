@@ -47,4 +47,18 @@ app.listen(port, () => {
     console.log(`Node started at port ${port}`);
 });
 
+app.delete('/todos/:id', (req, res) => {
+    var id = req.params.id;
+
+    if (ObjectId.isValid(id)) {
+        Todo.findByIdAndRemove(id).then((doc) => {
+            if (doc) {
+                res.send({ doc });//creation object around it to add few more properties later
+            } else {
+                res.status(404).send({ error: 'Todo does not exists' });
+            }
+        }, (e) => { res.status(400).send(e); });
+    } else { res.status(404).send({ error: 'enter valid id' }); }
+});
+
 module.exports.app = app;
