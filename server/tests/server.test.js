@@ -90,5 +90,25 @@ describe('get/Todos/:id', () => {
             .end(done);
     });
 
-    
+
+});
+
+describe('Delete/Todos/:id', () => {
+    var hexId = todoArr[0]._id.toHexString();
+    it('should delete todo', (done) => {
+        request(app)
+            .delete(`/todos/${hexId}`)
+            .expect(200)
+            .expect((res) => {
+                expect(res.body.doc._id).toBe(hexId);
+            })
+            .end((err, res) => {
+                if (err) { return done(e); }
+                Todo.findById(hexId).then((doc) => {
+                    console.log(doc);
+                    expect(doc).toBe(null);
+                    done();
+                }).catch((e) => { done(e) });
+            });
+    });
 });
