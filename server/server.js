@@ -1,12 +1,15 @@
+require('./config/config');
+
 const express = require('express');
 const bodyparser = require('body-parser');
 const { ObjectId } = require('mongodb');
+const _ = require('lodash');
 
 const { mongoose } = require('./db/db');
 const { Todo } = require('./model/todo');
 const { User } = require('./model/user');
 
-var port = process.env.PORT || 3000;
+var port = process.env.PORT;
 
 var app = express();
 
@@ -59,6 +62,27 @@ app.delete('/todos/:id', (req, res) => {
             }
         }, (e) => { res.status(400).send(e); });
     } else { res.status(404).send({ error: 'enter valid id' }); }
+});
+
+
+app.patch('/todos/:id', (req, res) => {
+    var id = req.params.id;
+
+    var body = _.pick(req.body, ['text', 'completed']);
+
+    if (_.isBoolean(body.completed) && body.completed === true) {
+        body.completedAt = new Date().getTime();
+    } else {
+        body.completedAt = null;
+    }
+
+    if (ObjectId.isValid(id)) {
+        Todo.findByIdAndUpdate(id, { $set: body }, { new: true }).then((doc) => {
+            res.send(doc);
+        }).catch((e) => {
+            res.status(404).send(e);
+        });
+    } else { res.status(404).send({error: 'Invalid id'})}
 });
 
 module.exports.app = app;
