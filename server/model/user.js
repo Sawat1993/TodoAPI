@@ -33,22 +33,39 @@ var UserSchema = new mongoose.Schema({
     ]//for complex schema
 });
 
-UserSchema.methods.toJSON = function(){
+UserSchema.methods.toJSON = function () {
     var user = this;
     //var userObject = user.toObject();
 
-    return _.pick(user, ['_id','email'])
+    return _.pick(user, ['_id', 'email'])
 }//overriding toJSON method called by mongoose whenever we do translation from object to json
 
-UserSchema.methods.generateAuthToken = function() {
+UserSchema.methods.generateAuthToken = function () {//instance method
     var user = this;
     console.log(user.email);
     var access = 'auth';
-    var token = jwt.sign({_id: user._id.toHexString(), access}, 'salt text').toString();
+    var token = jwt.sign({ _id: user._id.toHexString(), access }, 'salt text').toString();
 
-    user.token.push({access, token});
+    user.token.push({ access, token });
 
     return user.save().then(() => token);
+};
+
+UserSchema.statics.findByToken = function (token) {//module method
+    var decode;
+    var User = this;//refering to module
+
+    try {
+        decode = jwt.verify(token, 'salt text');
+    } catch (e) {
+        return Promise.reject('Invalid token');
+    }
+    console.log(decode);
+    return User.findOne({
+       '_id': decode._id,
+        'token.access': decode.access,
+        'token.token': token
+    });
 };
 
 var User = mongoose.model('User', UserSchema);
