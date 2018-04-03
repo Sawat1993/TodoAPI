@@ -9,7 +9,7 @@ var UserSchema = new mongoose.Schema({
         type: String,
         required: true,
         trim: true,
-        minLength: 1,
+        minlength: 1,
         unique: true,
         validate: {
             validator: validator.isEmail,//can be written as validator: (value) => {return validator.isEmail(value)}
@@ -19,7 +19,7 @@ var UserSchema = new mongoose.Schema({
     password: {
         type: String,
         required: true,
-        minLength: 6
+        minlength: 6
     },
     token: [{
         access: {
