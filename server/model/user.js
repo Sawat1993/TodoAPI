@@ -44,7 +44,7 @@ UserSchema.methods.toJSON = function () {
 UserSchema.methods.generateAuthToken = function () {//instance method
     var user = this;
     var access = 'auth';
-    var token = jwt.sign({ _id: user._id.toHexString(), access }, 'salt text').toString();
+    var token = jwt.sign({ _id: user._id.toHexString(), access }, process.env.JWT_SECRET).toString();
 
     user.token = { access, token };//we can use user.token.pull to add arry of tokens for multiple login
 
@@ -66,9 +66,9 @@ UserSchema.methods.removeToken = function(inputToken){
 UserSchema.statics.findByToken = function (token) {//module method
     var decode;
     var User = this;//refering to module
-
+    console.log(process.env.JWT_SECRET);
     try {
-        decode = jwt.verify(token, 'salt text');
+        decode = jwt.verify(token, process.env.JWT_SECRET);
     } catch (e) {
         return Promise.reject('Invalid token');
     }
