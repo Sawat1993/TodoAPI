@@ -5,6 +5,9 @@ var msg = 'I am swatantra';
 var hash = SHA256(msg).toString();
 console.log(hash);
 
+var hash = SHA256(msg).toString();
+console.log(hash);
+
 var data = {
     id: 4
 };

@@ -1,11 +1,12 @@
 const {User} = require('./../model/user');
 
 var authenticate = (req, res, next)=>{
+    console.log('authenticating');
     var token = req.header('x-auth');
     User.findByToken(token).then((doc) => {
         if(doc){
-           res.user = doc;
-           res.token = token;
+           req.user = doc;
+           req.token = token;
            next();
         }else{
             return Promise.reject('User Not Found');

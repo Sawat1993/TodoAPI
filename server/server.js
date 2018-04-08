@@ -8,7 +8,7 @@ const _ = require('lodash');
 const { mongoose } = require('./db/db');
 const { Todo } = require('./model/todo');
 const { User } = require('./model/user');
-const {authenticate} =require('./middleware/authenticate');
+const { authenticate } = require('./middleware/authenticate');
 
 var port = process.env.PORT;
 
@@ -16,8 +16,11 @@ var app = express();
 
 app.use(bodyparser.json());
 
-app.post('/todos', (req, res) => {
-    var todo = new Todo(req.body);
+app.post('/todos', authenticate, (req, res) => {
+    var todo = new Todo({
+        text: req.body.text,
+        _creator: req.user._id
+    });
 
     todo.save().then((doc) => {
         res.send(doc);
@@ -27,35 +30,20 @@ app.post('/todos', (req, res) => {
 
 });
 
-app.get('/todos', (req, res) => {
-    Todo.find().then((docs) => {
+app.get('/todos',authenticate, (req, res) => {
+    Todo.find({_creator: req.user._id}).then((docs) => {
         res.send({ docs });//creation object around it to add few more properties later
     }, (e) => { res.status(400).send(e); });
 });
 
-app.get('/todos/:id', (req, res) => {
+app.get('/todos/:id', authenticate, (req, res) => {
     var id = req.params.id;
 
     if (ObjectId.isValid(id)) {
-        Todo.findById(id).then((doc) => {
-            if (doc) {
-                res.send({ doc });//creation object around it to add few more properties later
-            } else {
-                res.status(404).send({ error: 'Todo does not exists' });
-            }
-        }, (e) => { res.status(400).send(e); });
-    } else { res.status(404).send({ error: 'enter valid id' }); }
-});
-
-app.listen(port, () => {
-    console.log(`Node started at port ${port}`);
-});
-
-app.delete('/todos/:id', (req, res) => {
-    var id = req.params.id;
-
-    if (ObjectId.isValid(id)) {
-        Todo.findByIdAndRemove(id).then((doc) => {
+        Todo.findOne({
+            _id: id,
+            _creator: req.user._id
+        }).then((doc) => {
             if (doc) {
                 res.send({ doc });//creation object around it to add few more properties later
             } else {
@@ -66,7 +54,25 @@ app.delete('/todos/:id', (req, res) => {
 });
 
 
-app.patch('/todos/:id', (req, res) => {
+app.delete('/todos/:id',authenticate, (req, res) => {
+    var id = req.params.id;
+
+    if (ObjectId.isValid(id)) {
+        Todo.findOneAndRemove({
+            _id: id,
+            _creator: req.user._id
+        }).then((doc) => {
+            if (doc) {
+                res.send({ doc });//creation object around it to add few more properties later
+            } else {
+                res.status(404).send({ error: 'Todo does not exists' });
+            }
+        }, (e) => { res.status(400).send(e); });
+    } else { res.status(404).send({ error: 'enter valid id' }); }
+});
+
+
+app.patch('/todos/:id', authenticate,  (req, res) => {
     var id = req.params.id;
 
     var body = _.pick(req.body, ['text', 'completed']);
@@ -78,7 +84,10 @@ app.patch('/todos/:id', (req, res) => {
     }
 
     if (ObjectId.isValid(id)) {
-        Todo.findByIdAndUpdate(id, { $set: body }, { new: true }).then((doc) => {
+        Todo.findOneAndUpdate({
+            _id: id,
+            _creator: req.user._id
+        }, { $set: body }, { new: true }).then((doc) => {
             res.send(doc);
         }).catch((e) => {
             res.status(404).send(e);
@@ -91,18 +100,52 @@ app.post('/users', (req, res) => {
     var user = new User(body);
 
     user.save().then((doc) => {
-        return user.generateAuthToken();
+        return user.generateAuthToken();//we can also call it by doc.generateAuthToken() because doc is alsi instance of user schema
     }).then((token) => {
         res.header('x-auth', token).send(user);
     }).catch((e) => {
-        console.log(e);
         res.status(404).send(e);
     });
 
 });
 
-app.get('/users/me',authenticate , (req, res) => {
-   res.send(res.user);
+app.get('/users/me', authenticate, (req, res) => {
+    res.send(req.user);
+});
+
+app.post('/users/login', (req, res) => {
+
+    User.findByEmail(req.body.email, req.body.password).then((user) => {
+        // userObj = new User(user);
+        // userObj.generateAuthToken().then((token) => {
+        //     res.header('x-auth', token).send(userObj);
+        // })//This will create new istance of the model with user details which will be new so isModified will be true and it will hash the password again
+        user.generateAuthToken().then((token) => {
+            res.header('x-auth', token).send(user);
+        })
+    }).catch((e) => {
+        res.status(404).send(e);
+    })
+});
+
+// app.delete('users/me/token',authenticate , (req, res) => {
+//     req.user.removeToken(req.token).then(() => {
+//         res.send();
+//     }).catch((e) => {
+//         res.status(401).send(e);
+//     })
+// })
+
+app.delete('/users/me/token', authenticate, (req, res) => {
+    req.user.removeToken(req.token).then(() => {
+        res.send();
+    }).catch((e) => {
+        res.status(401).send(e);
+    })
+})
+
+app.listen(port, () => {
+    console.log(`Node started at port ${port}`);
 });
 
 module.exports.app = app;

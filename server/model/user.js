@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const validator = require('validator');
 const jwt = require('jsonwebtoken');
 const _ = require('lodash');
-const bcrypt =require('bcryptjs');
+const bcrypt = require('bcryptjs');
 
 var UserSchema = new mongoose.Schema({
     email: {
@@ -46,10 +46,22 @@ UserSchema.methods.generateAuthToken = function () {//instance method
     var access = 'auth';
     var token = jwt.sign({ _id: user._id.toHexString(), access }, 'salt text').toString();
 
-    user.token.push({ access, token });
+    user.token = { access, token };//we can use user.token.pull to add arry of tokens for multiple login
 
     return user.save().then(() => token);
 };
+
+UserSchema.methods.removeToken = function(inputToken){
+    var user = this;
+    console.log(inputToken);
+    return user.update({
+        $pull :{
+            token: {
+                token: inputToken
+            }
+        }
+    })
+}
 
 UserSchema.statics.findByToken = function (token) {//module method
     var decode;
@@ -62,24 +74,45 @@ UserSchema.statics.findByToken = function (token) {//module method
     }
     console.log(decode);
     return User.findOne({
-       '_id': decode._id,
+        '_id': decode._id,
         'token.access': decode.access,
         'token.token': token
     });
 };
 
-UserSchema.pre('save', function(next){
-    var user = this;
+UserSchema.statics.findByEmail = function (email, password) {//module method
+    var User = this;//refering to module
+    return User.findOne({ email: email }).then((user) => {
+        if (user) {
+            return new Promise((resolve, reject) => {
+                bcrypt.compare(password, user.password, (err, res) => {
+                    console.log(res);
+                if (res) {
+                    resolve(user);
+                } else {
+                    reject();
+                }
+            });
+            })
+        }else {
+        return Promise.reject();
+        }
+    });
+};
 
-    if(user.isModified('password')){
+UserSchema.pre('save', function (next) {
+    var user = this;
+    console.log(1234);
+    if (user.isModified('password')) {
+        console.log(123);
         bcrypt.genSalt(10, (err, salt) => {
             bcrypt.hash(user.password, 10, (err, hash) => {
-               user.password = hash;
-               next();
+                user.password = hash;
+                next();
             })
         });
-    }else {
-    next();
+    } else {
+        next();
     }
 });
 

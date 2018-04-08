@@ -16,8 +16,8 @@ bcrypt.genSalt(100, (err, salt) => {
     })
 });
 
-bcrypt.compare(pwd, '$2a$10$jJ4RMrV6BuYHbPRx5WRtg.z.dj9tokOrCIg76274/pm7EHZGu055i', (err, res) => {
-    console.log(res);
+bcrypt.compare(123, '$2a$10$jJ4RMrV6BuYHbPRx5WRtg.z.dj9tokOrCIg76274/pm7EHZGu055i', (err, res) => {
+    console.log(err);
 });
 
 bcrypt.compare(pwd, '$2a$10$qjB0x0Dx9gz2UVm.VQKmZOlvv9hQ1nXCYXcLnQWx/ZLw3TczTCQTy', (err, res) => {

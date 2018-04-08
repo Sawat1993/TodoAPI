@@ -7,5 +7,8 @@ var data = {
 var token = jwt.sign(data, 'salt string');
 console.log(token);
 
+var token = jwt.sign(data, 'salt string');
+console.log(token);
+
 var decode = jwt.verify(token, 'salt string');
 console.log(decode);
